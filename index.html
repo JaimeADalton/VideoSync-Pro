@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>VideoSync PRO</title>
+  <title>VideoSync PRO - Fullscreen & HighRes</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
   
   <style>
@@ -40,7 +40,7 @@
     aside { width: 340px; background: var(--panel); border-right: 1px solid var(--border); display: flex; flex-direction: column; z-index: 50; flex-shrink: 0; transition: margin 0.3s; }
     aside.closed { margin-left: -340px; }
 
-    main { flex: 1; display: flex; flex-direction: column; min-width: 0; position: relative; }
+    main { flex: 1; display: flex; flex-direction: column; min-width: 0; position: relative; transition: 0.3s; }
 
     header { height: 45px; background: var(--panel); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 15px; flex-shrink: 0; }
     
@@ -48,7 +48,7 @@
     .tool-group { display: flex; align-items: center; gap: 8px; border-right: 1px solid #333; padding-right: 15px; }
     .tool-label { font-size: 9px; font-weight: 800; color: #555; text-transform: uppercase; margin-right: 5px; }
 
-    /* --- STAGE --- */
+    /* --- STAGE & CARDS --- */
     #stage {
       flex: 1; background: #000; padding: 2px; overflow: hidden; position: relative;
       display: grid; gap: 2px;
@@ -68,6 +68,7 @@
       background: #000; border: 1px solid #222; display: flex; flex-direction: column;
       position: relative; overflow: hidden;
       width: 100%; height: 100%;
+      transition: width 0.3s, height 0.3s, top 0.3s, left 0.3s; /* Animación suave entrada/salida FS */
     }
     .card.is-master { border: 2px solid var(--master); z-index: 10; }
 
@@ -76,6 +77,42 @@
         grid-column: 1 / 2; grid-row: 1 / 999; position: sticky; top: 0; left: 0;
         height: calc(100vh - 170px) !important; order: 1; border: none;
     }
+
+    /* === FULLSCREEN MODE STYLES === */
+    body.fullscreen-active aside,
+    body.fullscreen-active header,
+    body.fullscreen-active .toolbar,
+    body.fullscreen-active footer {
+        display: none !important; /* Ocultar toda la UI */
+    }
+
+    body.fullscreen-active #stage {
+        padding: 0; gap: 0;
+        display: block !important; /* Romper el Grid */
+    }
+
+    body.fullscreen-active .card {
+        display: none; /* Ocultar las cartas no activas */
+    }
+
+    body.fullscreen-active .card.is-fs {
+        display: flex;
+        position: fixed;
+        top: 0; left: 0;
+        width: 100vw !important;
+        height: 100vh !important;
+        z-index: 9999;
+        border: none;
+    }
+
+    /* Ocultar header de la carta en FS para inmersión total (opcional, aquí lo dejo visible pero sutil) */
+    body.fullscreen-active .card.is-fs .card-header {
+        position: absolute; top: -40px; left: 0; width: 100%; transition: top 0.2s; opacity: 0;
+    }
+    body.fullscreen-active .card.is-fs:hover .card-header {
+        top: 0; opacity: 1; /* Mostrar solo al mover el mouse */
+    }
+
 
     .card-header {
       height: 28px; background: rgba(20,20,20,0.95); display: flex; align-items: center; justify-content: space-between;
@@ -90,11 +127,7 @@
         transform-origin: center center; transition: transform 0.05s linear; 
     }
 
-    /* 
-       === [CLAVE] SUPER RESOLUCIÓN TRICK === 
-       Hacemos el iframe 3 veces más grande (300%) y lo escalamos al 33%.
-       Esto engaña a YouTube para que envíe HD/4K incluso en ventanas pequeñas.
-    */
+    /* === SUPER RESOLUCIÓN TRICK (Aplica en Grid, Focused Y Fullscreen) === */
     .tf-layer iframe { 
         width: 300% !important; 
         height: 300% !important; 
@@ -102,7 +135,7 @@
         transform-origin: 0 0;
         border: 0; 
         display: block; 
-        pointer-events: none; /* Evita interferencia con el click, ya que usas controles externos */
+        pointer-events: none; 
     }
     
     .interact-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; }
@@ -111,14 +144,48 @@
     .interact-layer.draw-mode { cursor: crosshair; }
     canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
 
-    /* --- FOOTER --- */
+    /* --- FOOTER & TIMELINE FIX --- */
     footer { height: 80px; background: var(--panel); border-top: 1px solid var(--border); display: flex; flex-direction: column; z-index: 60; flex-shrink: 0; }
     
-    .timeline { height: 16px; background: #000; position: relative; cursor: pointer; width: 100%; }
-    .timeline:hover .t-bg { height: 100%; background: #222; }
-    .t-bg { position: absolute; bottom: 0; left: 0; width: 100%; height: 4px; background: #333; transition: height 0.1s; }
-    .t-fill { position: absolute; top: 0; left: 0; height: 100%; width: 0%; background: #cc0000; pointer-events: none; transition: width 0.1s linear; }
-    .t-input { position: absolute; top: -5px; left: 0; width: 100%; height: 25px; opacity: 0; cursor: pointer; margin: 0; z-index: 20; }
+    .timeline { 
+      height: 14px; /* Altura del área sensible al ratón */
+      background: #000; 
+      position: relative; 
+      cursor: pointer; 
+      width: 100%; 
+    }
+
+    /* Estilos compartidos para Fondo (Gris) y Relleno (Rojo) */
+    .t-bg, .t-fill { 
+      position: absolute; 
+      bottom: 0; 
+      left: 0; 
+      height: 3px; /* Grosor fino por defecto */
+      transition: height 0.15s ease; /* Animación suave de grosor */
+    }
+
+    .t-bg { 
+      width: 100%; 
+      background: #333; 
+    }
+
+    .t-fill { 
+      width: 0%; 
+      background: #cc0000; 
+      pointer-events: none; 
+      /* Animamos el width (progreso) lineal, y el height (grosor) suave */
+      transition: width 0.1s linear, height 0.15s ease; 
+    }
+
+    /* AL PASAR EL RATÓN: Engrosar ambas barras */
+    .timeline:hover .t-bg, 
+    .timeline:hover .t-fill { 
+      height: 100%; 
+    }
+
+    .t-input { 
+      position: absolute; top: -5px; left: 0; width: 100%; height: 25px; opacity: 0; cursor: pointer; margin: 0; z-index: 20; 
+    }
 
     .deck { flex: 1; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; }
     
@@ -193,7 +260,6 @@
       VideoSync <span style="color:var(--accent)">PRO</span>
     </div>
     <div style="display:flex; gap:10px; align-items:center;">
-      <!-- Forzamos a HD1080 por defecto y avisamos que esto consume más recursos -->
       <select id="qualitySelect" onchange="Engine.setQuality(this.value)" style="width:90px; background:#222; border:1px solid #333; color:#fff; padding:4px; border-radius:4px; font-size:11px;">
         <option value="highres">4K/Orig</option>
         <option value="hd1080" selected>1080p</option>
@@ -292,7 +358,8 @@ const State = {
   pan: {x:0, y:0},
   globalVol: 100,
   loop: {a:null, b:null},
-  quality: 'hd1080' 
+  quality: 'hd1080',
+  fullScreenId: null // Trackeamos si estamos en FS
 };
 
 const Engine = {
@@ -308,15 +375,22 @@ const Engine = {
         UI.render();
     }
     this.int = setInterval(() => this.tick(), 100);
+    
+    // Controles globales Teclado
     document.addEventListener('keydown', e => {
         if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA') return;
         if(e.code==='Space') { e.preventDefault(); this.toggleGlobalPlay(); }
+        if(e.key === 'Escape' && State.fullScreenId) { this.toggleFullscreen(State.fullScreenId); }
     });
   },
 
   tick() {
     if(this.isScrubbing || !State.masterId) return;
-    const m = this.players[State.masterId];
+    
+    // Si estamos en fullscreen, solo nos importa el master (o la carta que está en fullscreen)
+    const activeId = State.fullScreenId || State.masterId;
+    const m = this.players[activeId];
+    
     if(!m || typeof m.getCurrentTime !== 'function') return;
 
     const curr = m.getCurrentTime();
@@ -331,17 +405,61 @@ const Engine = {
         document.getElementById('btnPlay').innerText = playing ? "⏸" : "▶";
     }
 
-    if(State.isPlaying) {
-        const mOff = State.videos.find(v=>v.id===State.masterId).offset;
+    // Si NO estamos en Fullscreen, sincronizamos los esclavos.
+    // Si ESTAMOS en Fullscreen, los esclavos están pausados (lógica en toggleFullscreen)
+    if(State.isPlaying && !State.fullScreenId) {
+        const mOff = State.videos.find(v=>v.id===activeId).offset;
         const global = curr - mOff;
 
         Object.values(this.players).forEach(p => {
-            if(p.id === State.masterId) return;
+            if(p.id === activeId) return;
             const pOff = State.videos.find(v=>v.id===p.id).offset;
             const target = global + pOff;
             if(target < 0) return;
             if(Math.abs(p.getCurrentTime() - target) > 0.4) p.seekTo(target, true);
             if(p.getPlayerState() !== 1 && p.getPlayerState() !== 3) p.playVideo();
+        });
+    }
+  },
+  
+  // === LOGICA NUEVA: PANTALLA COMPLETA ===
+  toggleFullscreen(id) {
+    const body = document.body;
+    const card = document.getElementById(`card-${id}`);
+    
+    if (State.fullScreenId === id) {
+        // ==> SALIR DE FULLSCREEN
+        State.fullScreenId = null;
+        body.classList.remove('fullscreen-active');
+        card.classList.remove('is-fs');
+        
+        UI.toast("Modo Grid");
+        
+        // Sincronización Mágica:
+        // 1. Forzamos sync inmediata (porque los otros videos se quedaron atrás)
+        this.forceSync(); 
+        
+        // 2. Si el master estaba tocando, reanudamos los demás
+        if(State.isPlaying) {
+            Object.values(this.players).forEach(p => {
+                if(p.id !== id) p.playVideo();
+            });
+        }
+
+    } else {
+        // ==> ENTRAR A FULLSCREEN
+        // Primero, aseguramos que este sea el master, para que tenga el control
+        if(State.masterId !== id) this.setMaster(id);
+        
+        State.fullScreenId = id;
+        body.classList.add('fullscreen-active');
+        card.classList.add('is-fs');
+        
+        UI.toast("Modo Cine (ESC para salir)");
+        
+        // Pausamos todos los esclavos para ahorrar recursos
+        Object.values(this.players).forEach(p => {
+            if(p.id !== id) p.pauseVideo();
         });
     }
   },
@@ -358,23 +476,36 @@ const Engine = {
       State.isPlaying = !State.isPlaying;
       document.getElementById('btnPlay').innerText = State.isPlaying ? "⏸" : "▶";
       const action = State.isPlaying ? "playVideo" : "pauseVideo";
-      Object.values(this.players).forEach(p => { if(typeof p[action] === 'function') p[action](); });
+      
+      // Si estamos en FS, solo actuamos sobre el Master
+      if(State.fullScreenId) {
+          this.players[State.fullScreenId][action]();
+      } else {
+          Object.values(this.players).forEach(p => { if(typeof p[action] === 'function') p[action](); });
+      }
   },
 
   scrub(val) {
       this.isScrubbing = true;
-      if(State.masterId) this.players[State.masterId].seekTo(val, true);
+      const active = State.fullScreenId || State.masterId;
+      if(active) this.players[active].seekTo(val, true);
+      
       const fill = document.getElementById('scrubFill');
       const s = document.getElementById('scrubber');
       if(fill) fill.style.width = (val / s.max * 100) + '%';
   },
-  endScrub() { this.isScrubbing = false; this.forceSync(); },
+  endScrub() { 
+      this.isScrubbing = false; 
+      // Si no estamos en FS, sincronizamos. Si estamos en FS, no hace falta (los otros están pausados)
+      if(!State.fullScreenId) this.forceSync(); 
+  },
 
   skip(val) {
-      if(!State.masterId) return;
-      const m = this.players[State.masterId];
+      const active = State.fullScreenId || State.masterId;
+      if(!active) return;
+      const m = this.players[active];
       m.seekTo(m.getCurrentTime() + val, true);
-      setTimeout(()=>this.forceSync(), 200);
+      if(!State.fullScreenId) setTimeout(()=>this.forceSync(), 200);
   },
 
   forceSync() {
@@ -421,25 +552,26 @@ const Engine = {
   
   setQuality(q) {
       State.quality = q;
-      const m = this.players[State.masterId];
+      const active = State.fullScreenId || State.masterId;
+      const m = this.players[active];
+      
       let globalT = 0;
-      if (State.masterId && m && typeof m.getCurrentTime === 'function') {
-          const mOff = State.videos.find(v => v.id === State.masterId).offset;
+      if (active && m && typeof m.getCurrentTime === 'function') {
+          const mOff = State.videos.find(v => v.id === active).offset;
           globalT = m.getCurrentTime() - mOff;
       }
 
       Object.values(this.players).forEach(p => {
           const vData = State.videos.find(v => v.id === p.id);
           if(!vData) return;
-          const target = State.masterId ? (globalT + vData.offset) : p.getCurrentTime();
+          const target = active ? (globalT + vData.offset) : p.getCurrentTime();
           
-          // RECARGA Y FUERZA DE CALIDAD
           p.loadVideoById({
               videoId: vData.ytId,
               startSeconds: target,
               suggestedQuality: State.quality
           });
-          p.setPlaybackQuality(State.quality); // Intento doble
+          p.setPlaybackQuality(State.quality);
       });
 
       if (!State.isPlaying) {
@@ -602,8 +734,13 @@ const UI = {
       const c = document.createElement('div'); c.className='card'; c.id=`card-${v.id}`;
       c.innerHTML = `
         <div class="card-header">
-           <span>${v.label}</span>
-           <button class="primary" style="padding:2px 6px; font-size:9px;" onclick="Engine.setMaster('${v.id}')">MASTER</button>
+           <div style="display:flex; align-items:center; gap:5px;">
+              <span>${v.label}</span>
+           </div>
+           <div style="display:flex; gap:5px;">
+              <button style="padding:1px 4px; font-size:10px;" onclick="Engine.toggleFullscreen('${v.id}')">⛶</button>
+              <button class="primary" style="padding:2px 6px; font-size:9px;" onclick="Engine.setMaster('${v.id}')">MASTER</button>
+           </div>
         </div>
         <div class="viewport">
            <div class="tf-layer" id="tf-${v.id}"><div id="yt-${v.id}"></div></div>
@@ -619,12 +756,10 @@ const UI = {
         events: {
            onReady: e => { 
                e.target.id=v.id; e.target.mute(); 
-               // Forzar calidad al iniciar
                e.target.setPlaybackQuality(State.quality);
                if(!State.masterId) Engine.setMaster(v.id); 
            },
            onStateChange: e => {
-               // TRUCO ADICIONAL JS: Si empieza a reproducir (1) o está en buffer (3), forzar calidad de nuevo
                if(e.data === 1 || e.data === 3) {
                    e.target.setPlaybackQuality(State.quality);
                }
