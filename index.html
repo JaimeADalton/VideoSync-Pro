@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>VideoSync PRO</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+  
+  <style>
+    :root {
+      --bg: #0b0b0b; --panel: #141414; --border: #2a2a2a;
+      --accent: #3b82f6; --master: #10b981; --danger: #ef4444;
+      --text: #e5e5e5;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; outline: none; user-select: none; }
+    body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; height: 100vh; display: flex; overflow: hidden; }
+
+    /* --- INPUTS FIX (NO ARROWS) --- */
+    input[type=number] { -moz-appearance: textfield; appearance: textfield; margin: 0; text-align: center; }
+    input[type=number]::-webkit-inner-spin-button, 
+    input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; display: none; }
+    
+    input[type=text], input[type=number], textarea {
+      background: #080808; border: 1px solid #333; color: #fff; padding: 6px; 
+      font-family: 'JetBrains Mono', monospace; font-size: 11px; border-radius: 4px; text-align: left;
+    }
+    input[type=number] { text-align: center; color: var(--accent); }
+    input:focus { border-color: var(--accent); }
+
+    /* --- SLIDERS --- */
+    input[type=range] { -webkit-appearance: none; background: transparent; width: 100%; cursor: pointer; height: 20px; }
+    input[type=range]::-webkit-slider-runnable-track { width: 100%; height: 4px; background: #333; border-radius: 2px; }
+    input[type=range]::-moz-range-track { width: 100%; height: 4px; background: #333; border-radius: 2px; }
+    input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; height: 12px; width: 12px; background: #fff; border-radius: 50%; margin-top: -4px; box-shadow: 0 1px 3px #000; }
+    input[type=range]::-moz-range-thumb { height: 12px; width: 12px; background: #fff; border: none; border-radius: 50%; box-shadow: 0 1px 3px #000; }
+    input[type=range]:hover::-webkit-slider-thumb { transform: scale(1.3); background: var(--accent); }
+
+    /* --- LAYOUT STRUCTURE --- */
+    aside { width: 340px; background: var(--panel); border-right: 1px solid var(--border); display: flex; flex-direction: column; z-index: 50; flex-shrink: 0; transition: margin 0.3s; }
+    aside.closed { margin-left: -340px; }
+
+    main { flex: 1; display: flex; flex-direction: column; min-width: 0; position: relative; }
+
+    header { height: 45px; background: var(--panel); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 15px; flex-shrink: 0; }
+    
+    .toolbar { height: 45px; background: #0f0f0f; border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 15px; gap: 15px; overflow-x: auto; flex-shrink: 0; }
+    .tool-group { display: flex; align-items: center; gap: 8px; border-right: 1px solid #333; padding-right: 15px; }
+    .tool-label { font-size: 9px; font-weight: 800; color: #555; text-transform: uppercase; margin-right: 5px; }
+
+    /* --- STAGE GRID (CORE FIX) --- */
+    #stage {
+      flex: 1; background: #000; padding: 2px; overflow: hidden; position: relative;
+      display: grid; gap: 2px;
+      align-content: stretch; justify-items: stretch;
+    }
+
+    /* === MODO FOCUSED (LAYOUT ARREGLADO) === */
+    #stage.focused-mode {
+      grid-template-columns: 1fr 300px !important; /* Master (Flex) | Lista (Fija) */
+      
+      /* Filas compactas para la lista lateral */
+      grid-auto-rows: 170px !important; 
+      
+      /* Scroll vertical activado SOLO en este modo */
+      overflow-y: auto; 
+      
+      /* Alineación arriba para evitar huecos entre miniaturas */
+      align-content: start !important;
+      
+      display: grid;
+    }
+
+    .card {
+      background: #000; border: 1px solid #222; display: flex; flex-direction: column;
+      position: relative; overflow: hidden;
+      width: 100%; height: 100%;
+    }
+    .card.is-master { border: 2px solid var(--master); z-index: 10; }
+
+    /* Reglas para Miniaturas (Columna Derecha) */
+    #stage.focused-mode .card {
+        grid-column: 2 / 3; 
+        height: 100% !important; /* Llenan la fila de 170px */
+        width: 100%;
+        order: 2;
+    }
+    
+    /* Reglas para MASTER (Izquierda Centrado) */
+    #stage.focused-mode .card.is-master {
+        grid-column: 1 / 2;
+        /* Ocupa todo el alto vertical de la columna izquierda (spanning) */
+        grid-row: 1 / 999; 
+        
+        /* STICKY: Se queda fijo mientras scrolleas la derecha */
+        position: sticky; 
+        top: 0; left: 0;
+        
+        /* Altura exacta del viewport disponible (Header 45 + Toolbar 45 + Footer 80 = 170px aprox used) 
+           Usamos calc(100vh - 170px) para forzar el centrado vertical del contenido */
+        height: calc(100vh - 170px) !important;
+        
+        order: 1;
+        border: none;
+    }
+
+    .card-header {
+      height: 28px; background: rgba(20,20,20,0.95); display: flex; align-items: center; justify-content: space-between;
+      padding: 0 8px; border-bottom: 1px solid #333; font-size: 11px; font-weight: 600; color: #ccc;
+      z-index: 20; flex-shrink: 0;
+    }
+
+    .viewport { flex: 1; position: relative; overflow: hidden; background: #000; width: 100%; height: 100%; }
+    .tf-layer { width: 100%; height: 100%; position: absolute; top:0; left:0; transform-origin: center center; transition: transform 0.05s linear; }
+    .tf-layer iframe { width: 100%; height: 100%; border: 0; display: block; }
+    
+    .interact-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; }
+    .interact-layer.pan-mode { cursor: grab; }
+    .interact-layer.pan-mode:active { cursor: grabbing; }
+    .interact-layer.draw-mode { cursor: crosshair; }
+    canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
+
+    /* --- FOOTER --- */
+    footer { height: 80px; background: var(--panel); border-top: 1px solid var(--border); display: flex; flex-direction: column; z-index: 60; flex-shrink: 0; }
+    
+    .timeline { height: 16px; background: #000; position: relative; cursor: pointer; width: 100%; }
+    .timeline:hover .t-bg { height: 100%; background: #222; }
+    .t-bg { position: absolute; bottom: 0; left: 0; width: 100%; height: 4px; background: #333; transition: height 0.1s; }
+    .t-fill { position: absolute; top: 0; left: 0; height: 100%; width: 0%; background: #cc0000; pointer-events: none; transition: width 0.1s linear; }
+    .t-input { position: absolute; top: -5px; left: 0; width: 100%; height: 25px; opacity: 0; cursor: pointer; margin: 0; z-index: 20; }
+
+    .deck { flex: 1; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; }
+    
+    button { cursor: pointer; background: #222; border: 1px solid #333; color: #ccc; padding: 6px 12px; border-radius: 4px; font-size: 11px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; transition: 0.1s; font-family: inherit; white-space: nowrap; }
+    button:hover { background: #333; color: #fff; border-color: #555; }
+    button.primary { background: var(--accent); color: #000; border-color: var(--accent); }
+    button.danger { color: var(--danger); border-color: rgba(239,68,68,0.3); background: rgba(239,68,68,0.05); }
+    button.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+    .play-btn { width: 40px; height: 40px; border-radius: 50%; background: #fff; color: #000; display: flex; align-items: center; justify-content: center; font-size: 20px; border: none; box-shadow: 0 0 15px rgba(255,255,255,0.1); }
+    .play-btn:hover { transform: scale(1.1); }
+
+    .lcd-time { font-family: 'JetBrains Mono', monospace; font-size: 20px; font-weight: 700; color: var(--text); background: #080808; padding: 2px 10px; border: 1px solid #333; border-radius: 4px; }
+
+    /* TABS */
+    .tabs-head { display: flex; border-bottom: 1px solid var(--border); background: #111; }
+    .tab { flex: 1; text-align: center; padding: 10px; font-size: 10px; font-weight: 700; color: #666; cursor: pointer; border-bottom: 2px solid transparent; }
+    .tab.active { color: var(--accent); border-bottom-color: var(--accent); background: var(--panel); }
+    .tab-body { padding: 15px; flex: 1; overflow-y: auto; display: none; flex-direction: column; }
+    .tab-body.active { display: flex; }
+
+    .toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); background: #222; border: 1px solid var(--accent); padding: 8px 16px; border-radius: 20px; font-size: 12px; opacity: 0; pointer-events: none; transition: 0.3s; z-index: 200; }
+    .toast.show { opacity: 1; bottom: 110px; }
+  </style>
+</head>
+<body>
+
+<aside id="sidebar">
+  <div class="tabs-head">
+    <div class="tab active" onclick="UI.tab('src')">FUENTES</div>
+    <div class="tab" onclick="UI.tab('audio')">AUDIO</div>
+    <div class="tab" onclick="UI.tab('data')">DATOS</div>
+  </div>
+
+    
+  <!-- TAB 1: FUENTES (CORREGIDO) -->
+  <div id="tab-src" class="tab-body active">
+    <div style="background:#222; padding:12px; border-radius:6px; margin-bottom:15px; border:1px solid #333;">
+      <div style="font-size:10px; font-weight:800; color:#666; margin-bottom:8px; letter-spacing:0.5px; text-transform:uppercase;">Nueva Fuente</div>
+      
+      <!-- Input URL -->
+      <input type="text" id="inUrl" placeholder="Pegar URL de YouTube..." style="margin-bottom:8px; width:100%; box-sizing:border-box;">
+      
+      <!-- Fila Etiqueta + Botón -->
+      <div style="display:flex; gap:8px;">
+        <!-- flex:1 para que ocupe el hueco disponible, min-width:0 para no desbordar -->
+        <input type="text" id="inLabel" placeholder="Etiqueta" style="flex:1; min-width:0;">
+        <button class="primary" onclick="App.addVideo()" style="white-space:nowrap;">+ Añadir</button>
+      </div>
+    </div>
+    <div id="videoList" style="flex:1; overflow-y:auto;"></div>
+  </div>  
+
+
+
+  <div id="tab-audio" class="tab-body">
+    <div style="margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
+        <span style="font-size:11px; font-weight:bold; color:#888;">MEZCLADOR</span>
+        <label style="font-size:11px; display:flex; gap:5px; cursor:pointer;">
+            <input type="checkbox" id="chkSolo" checked onchange="Engine.updateAudio()"> Solo Master
+        </label>
+    </div>
+    <div id="mixerList"></div>
+  </div>
+
+  <div id="tab-data" class="tab-body">
+    <div style="font-size:11px; color:#888; font-weight:bold; margin-bottom:5px;">PROYECTO (JSON)</div>
+    <textarea id="jsonBox" style="flex:1; resize:none; margin-bottom:10px; background:#050505; border:1px solid #333; color:#aaa; font-family:monospace; padding:5px; text-align:left;"></textarea>
+    <div style="display:flex; gap:5px; margin-bottom:15px;">
+      <button style="flex:1" onclick="App.exportData()">Guardar</button>
+      <button class="primary" style="flex:1" onclick="App.importData()">Cargar</button>
+    </div>
+    <button class="danger" style="width:100%" onclick="App.reset()">⚠️ RESET TOTAL</button>
+  </div>
+</aside>
+
+<main>
+  <header>
+    <div style="font-weight:800; font-size:15px; display:flex; gap:10px; align-items:center;">
+      <button style="padding:4px 8px;" onclick="document.getElementById('sidebar').classList.toggle('closed')">☰</button>
+      VideoSync <span style="color:var(--accent)">PRO</span>
+    </div>
+    <div style="display:flex; gap:10px; align-items:center;">
+      <select id="qualitySelect" onchange="Engine.setQuality(this.value)" style="width:90px; background:#222; border:1px solid #333; color:#fff; padding:4px; border-radius:4px; font-size:11px;">
+        <option value="highres">4K/Orig</option>
+        <option value="hd1080" selected>1080p</option> <!-- Marcado por defecto -->
+        <option value="hd720">720p</option>
+        <option value="large">480p</option>
+        <option value="default">Auto</option>
+      </select>
+      <button onclick="UI.toggleLayout()">⛶ Layout: <span id="lblLayout">GRID</span></button>
+    </div>
+  </header>
+
+  <div class="toolbar">
+    <div class="tool-group">
+      <span class="tool-label">VELOCIDAD</span>
+      <input type="range" min="0.1" max="2.0" step="0.05" value="1" style="width:60px;" oninput="Engine.setSpeed(this.value)">
+      <input type="number" id="valSpeed" value="1.0" step="0.05" style="width:45px;" onchange="Engine.setSpeed(this.value)">
+    </div>
+
+    <div class="tool-group">
+      <span class="tool-label">ZOOM MASTER</span>
+      <input type="range" min="100" max="500" step="5" value="100" style="width:60px;" oninput="Engine.setZoom(this.value)">
+      <input type="number" id="valZoom" value="100" step="5" style="width:50px;" onchange="Engine.setZoom(this.value)">
+    </div>
+
+    <button id="btnDraw" onclick="Drawing.toggle()">✏️ PINTAR</button>
+    <button onclick="Drawing.clear()">BORRAR</button>
+    
+    <div style="width:1px; height:20px; background:#333; margin:0 5px;"></div>
+    
+    <button onclick="Engine.setLoopA()">[ A</button>
+    <button onclick="Engine.setLoopB()">B ]</button>
+    <button class="danger" onclick="Engine.clearLoop()">×</button>
+  </div>
+
+  <div id="stage"></div>
+
+  <footer>
+    <div class="timeline">
+      <div class="t-bg"></div>
+      <div class="t-fill" id="scrubFill"></div>
+      <input type="range" class="t-input" id="scrubber" min="0" max="100" step="0.01" oninput="Engine.scrub(this.value)" onchange="Engine.endScrub()">
+    </div>
+
+    <div class="deck">
+      <div style="display:flex; gap:15px; align-items:center;">
+        <div>
+          <div style="font-size:10px; color:#666; font-weight:bold;">MASTER</div>
+          <div id="lblMaster" style="color:var(--master); font-weight:bold; font-size:12px;">---</div>
+        </div>
+        <div class="tool-group" style="border:none; padding:0;">
+            <span class="tool-label">VOL. GENERAL</span>
+            <input type="range" min="0" max="100" value="100" style="width:60px;" oninput="Engine.setGlobalVol(this.value)">
+        </div>
+      </div>
+
+      <div style="display:flex; gap:15px; align-items:center;">
+        <button onclick="Engine.skip(-5)">-5s</button>
+        <button onclick="Engine.skip(-0.04)">-1f</button>
+        <button class="play-btn" id="btnPlay" onclick="Engine.toggleGlobalPlay()">▶</button>
+        <button onclick="Engine.skip(0.04)">+1f</button>
+        <button onclick="Engine.skip(5)">+5s</button>
+      </div>
+
+      <div style="text-align:right;">
+        <div class="lcd-time" id="timecode">00:00:00</div>
+        <div style="font-size:10px; color:#666; margin-top:2px;">HH:MM:SS:FF</div>
+      </div>
+    </div>
+  </footer>
+</main>
+
+<div id="toast" class="toast">Notification</div>
+
+<script src="https://www.youtube.com/iframe_api"></script>
+<script>
+const Utils = {
+  uuid: () => Math.random().toString(36).substr(2, 9),
+  fmtTime: (s) => {
+    if(isNaN(s)) return "00:00:00";
+    const d = new Date(s * 1000).toISOString().substr(11, 8);
+    const f = Math.floor((s % 1) * 25).toString().padStart(2,'0');
+    return `${d}<span style="font-size:0.8em; color:#888">:${f}</span>`;
+  },
+  extractId: (url) => {
+    const m = url.match(/(?:v=|\/)([a-zA-Z0-9_-]{11})/);
+    return m ? m[1] : (url.length===11 ? url : null);
+  }
+};
+
+const State = {
+  videos: [],
+  masterId: null,
+  isPlaying: false,
+  mode: 'grid',
+  zoom: 100,
+  pan: {x:0, y:0},
+  globalVol: 100,
+  loop: {a:null, b:null},
+  quality: 'hd1080' // <--- AÑADIR ESTA LÍNEA
+};
+
+const Engine = {
+  players: {},
+  int: null,
+  isScrubbing: false,
+
+  init() {
+    App.load();
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => UI.render());
+    } else {
+        UI.render();
+    }
+    this.int = setInterval(() => this.tick(), 100);
+    document.addEventListener('keydown', e => {
+        if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA') return;
+        if(e.code==='Space') { e.preventDefault(); this.toggleGlobalPlay(); }
+    });
+  },
+
+  tick() {
+    if(this.isScrubbing || !State.masterId) return;
+    const m = this.players[State.masterId];
+    if(!m || typeof m.getCurrentTime !== 'function') return;
+
+    const curr = m.getCurrentTime();
+    const dur = m.getDuration();
+    UI.updateFooter(curr, dur);
+
+    if(State.loop.a !== null && State.loop.b !== null && curr >= State.loop.b) m.seekTo(State.loop.a);
+
+    const playing = (m.getPlayerState() === 1);
+    if(playing !== State.isPlaying) {
+        State.isPlaying = playing;
+        document.getElementById('btnPlay').innerText = playing ? "⏸" : "▶";
+    }
+
+    if(State.isPlaying) {
+        const mOff = State.videos.find(v=>v.id===State.masterId).offset;
+        const global = curr - mOff;
+
+        Object.values(this.players).forEach(p => {
+            if(p.id === State.masterId) return;
+            const pOff = State.videos.find(v=>v.id===p.id).offset;
+            const target = global + pOff;
+            if(target < 0) return;
+            if(Math.abs(p.getCurrentTime() - target) > 0.4) p.seekTo(target, true);
+            if(p.getPlayerState() !== 1 && p.getPlayerState() !== 3) p.playVideo();
+        });
+    }
+  },
+
+  setMaster(id) {
+      State.masterId = id;
+      UI.updateMasterVisuals();
+      this.updateAudio();
+      State.zoom = 100; State.pan = {x:0, y:0}; this.setZoom(100);
+      UI.toast(`MASTER: ${State.videos.find(v=>v.id===id).label}`);
+  },
+
+  toggleGlobalPlay() {
+      State.isPlaying = !State.isPlaying;
+      document.getElementById('btnPlay').innerText = State.isPlaying ? "⏸" : "▶";
+      const action = State.isPlaying ? "playVideo" : "pauseVideo";
+      Object.values(this.players).forEach(p => { if(typeof p[action] === 'function') p[action](); });
+  },
+
+  scrub(val) {
+      this.isScrubbing = true;
+      if(State.masterId) this.players[State.masterId].seekTo(val, true);
+      const fill = document.getElementById('scrubFill');
+      const s = document.getElementById('scrubber');
+      if(fill) fill.style.width = (val / s.max * 100) + '%';
+  },
+  endScrub() { this.isScrubbing = false; this.forceSync(); },
+
+  skip(val) {
+      if(!State.masterId) return;
+      const m = this.players[State.masterId];
+      m.seekTo(m.getCurrentTime() + val, true);
+      setTimeout(()=>this.forceSync(), 200);
+  },
+
+  forceSync() {
+      if(!State.masterId) return;
+      const m = this.players[State.masterId];
+      const global = m.getCurrentTime() - State.videos.find(v=>v.id===State.masterId).offset;
+      Object.values(this.players).forEach(p => {
+          if(p.id!==State.masterId) {
+              const off = State.videos.find(v=>v.id===p.id).offset;
+              p.seekTo(global + off, true);
+          }
+      });
+  },
+
+  syncHere(slaveId) {
+    if(!State.masterId) return alert("Define Master primero");
+    const m = this.players[State.masterId];
+    const s = this.players[slaveId];
+    const mOff = State.videos.find(v=>v.id===State.masterId).offset;
+    const sVid = State.videos.find(v=>v.id===slaveId);
+    sVid.offset = s.getCurrentTime() - m.getCurrentTime() + mOff;
+    App.save(); UI.renderVideos(); UI.toast("Offset actualizado");
+  },
+
+  updateAudio() {
+    const solo = document.getElementById('chkSolo').checked;
+    Object.values(this.players).forEach(p => {
+      const v = State.videos.find(x=>x.id===p.id);
+      const vol = v ? (v.volume || 100) : 100;
+      const finalVol = Math.min(vol, State.globalVol);
+      if(solo) {
+        if(p.id === State.masterId) { p.unMute(); p.setVolume(finalVol); } else p.mute();
+      } else {
+        p.unMute(); p.setVolume(finalVol);
+      }
+    });
+  },
+  setGlobalVol(v) { State.globalVol = v; this.updateAudio(); },
+
+  setSpeed(val) {
+    document.getElementById('valSpeed').value = val;
+    Object.values(this.players).forEach(p => p.setPlaybackRate(parseFloat(val)));
+  },
+  
+  setQuality(q) {
+      State.quality = q; // Guardamos la preferencia
+      
+      // Calculamos el tiempo global actual del Master
+      const m = this.players[State.masterId];
+      let globalT = 0;
+      if (State.masterId && m && typeof m.getCurrentTime === 'function') {
+          const mOff = State.videos.find(v => v.id === State.masterId).offset;
+          globalT = m.getCurrentTime() - mOff;
+      }
+
+      Object.values(this.players).forEach(p => {
+          const vData = State.videos.find(v => v.id === p.id);
+          if(!vData) return;
+
+          // Calculamos el tiempo exacto donde debe estar este video
+          const target = State.masterId ? (globalT + vData.offset) : p.getCurrentTime();
+
+          // RECARGA FORZOSA CON CALIDAD
+          p.loadVideoById({
+              videoId: vData.ytId,
+              startSeconds: target,
+              suggestedQuality: State.quality
+          });
+      });
+
+      // Si estaba pausado, mantenemos la pausa tras la recarga
+      if (!State.isPlaying) {
+          setTimeout(() => {
+              Object.values(this.players).forEach(p => p.pauseVideo());
+          }, 500);
+      }
+      
+      UI.toast("Calidad Forzada: " + State.quality);
+  },
+
+  setZoom(val) {
+    State.zoom = parseFloat(val);
+    document.getElementById('valZoom').value = State.zoom;
+    if(State.zoom <= 100) State.pan = {x:0, y:0};
+    this.applyTransform();
+    document.querySelectorAll('.interact-layer').forEach(l => {
+       if(State.zoom > 100 && !Drawing.active) l.classList.add('pan-mode');
+       else l.classList.remove('pan-mode');
+    });
+  },
+  
+  handlePan(dx, dy) {
+    if(State.zoom <= 100) return;
+    State.pan.x += dx; State.pan.y += dy;
+    this.applyTransform();
+  },
+  
+  applyTransform() {
+    if(!State.masterId) return;
+    const el = document.getElementById(`tf-${State.masterId}`);
+    if(el) el.style.transform = `scale(${State.zoom/100}) translate(${State.pan.x}px, ${State.pan.y}px)`;
+  },
+
+  setLoopA() { if(State.masterId) { State.loop.a = this.players[State.masterId].getCurrentTime(); UI.toast("Loop A"); } },
+  setLoopB() { if(State.masterId) { State.loop.b = this.players[State.masterId].getCurrentTime(); UI.toast("Loop B"); } },
+  clearLoop() { State.loop = {a:null, b:null}; UI.toast("Loop Off"); }
+};
+
+function enablePan(div) {
+  let isDown = false; let startX, startY;
+  div.addEventListener('mousedown', e => {
+    if(Drawing.active || State.zoom <= 100) return;
+    isDown = true; startX = e.clientX; startY = e.clientY;
+  });
+  window.addEventListener('mousemove', e => {
+    if(!isDown) return;
+    const dx = e.clientX - startX; const dy = e.clientY - startY;
+    const factor = 1 / (State.zoom/100);
+    Engine.handlePan(dx * factor, dy * factor);
+    startX = e.clientX; startY = e.clientY;
+  });
+  window.addEventListener('mouseup', () => isDown = false);
+}
+
+const Drawing = {
+  active: false,
+  toggle() {
+    this.active = !this.active;
+    const btn = document.getElementById('btnDraw');
+    const layers = document.querySelectorAll('.interact-layer');
+    if(this.active) {
+      if(btn) btn.classList.add('active');
+      layers.forEach(l => { l.classList.remove('pan-mode'); l.classList.add('draw-mode'); this.init(l); });
+      UI.toast("Pintar: ON");
+    } else {
+      if(btn) btn.classList.remove('active');
+      layers.forEach(l => { l.classList.remove('draw-mode'); if(State.zoom > 100) l.classList.add('pan-mode'); });
+    }
+  },
+  init(div) {
+    const canvas = div.nextElementSibling;
+    if(canvas.dataset.ready) return;
+    canvas.width = div.offsetWidth; canvas.height = div.offsetHeight;
+    const ctx = canvas.getContext('2d');
+    let p = false;
+    div.addEventListener('mousedown', e => { if(!Drawing.active) return; p=true; ctx.beginPath(); ctx.moveTo(e.offsetX, e.offsetY); ctx.strokeStyle='#ef4444'; ctx.lineWidth=4; ctx.lineCap='round'; });
+    div.addEventListener('mousemove', e => { if(Drawing.active && p) { ctx.lineTo(e.offsetX, e.offsetY); ctx.stroke(); }});
+    div.addEventListener('mouseup', () => p=false);
+    canvas.dataset.ready = true;
+  },
+  clear() {
+    document.querySelectorAll('canvas').forEach(c => { const ctx = c.getContext('2d'); ctx.clearRect(0,0,c.width,c.height); });
+    UI.toast("Limpio");
+  }
+};
+
+const App = {
+  addVideo() {
+    const url = document.getElementById('inUrl').value;
+    const id = Utils.extractId(url);
+    if(id) {
+      State.videos.push({ id:Utils.uuid(), ytId:id, label:document.getElementById('inLabel').value||'Cam '+(State.videos.length+1), offset:0, volume:100 });
+      this.save(); location.reload();
+    }
+  },
+  remove(id) { if(confirm("Eliminar?")) { State.videos = State.videos.filter(v=>v.id!==id); this.save(); location.reload(); } },
+  adjOffset(id, v) { const x = State.videos.find(z=>z.id===id); if(x) { x.offset+=v; UI.renderVideos(); } },
+  setVol(id, v) { const x = State.videos.find(z=>z.id===id); if(x) { x.volume=v; Engine.updateAudio(); } },
+  save() { localStorage.setItem('vs_final_fix', JSON.stringify(State.videos)); },
+  load() { const d = localStorage.getItem('vs_final_fix'); if(d) State.videos = JSON.parse(d); },
+  reset() { if(confirm("RESET?")) { localStorage.clear(); location.reload(); } },
+  exportData() { document.getElementById('jsonBox').value = JSON.stringify(State.videos, null, 2); UI.toast("JSON Generado"); },
+  importData() { try { const d = JSON.parse(document.getElementById('jsonBox').value); State.videos=d; this.save(); location.reload(); } catch(e){ alert("Error JSON"); } }
+};
+
+const UI = {
+  tab(id) {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    event.target.classList.add('active');
+    document.querySelectorAll('.tab-body').forEach(b => b.classList.remove('active'));
+    document.getElementById('tab-'+id).classList.add('active');
+  },
+
+  render() { this.renderVideos(); this.renderGrid(); this.renderMixer(); },
+  
+  renderVideos() {
+    const l = document.getElementById('videoList'); if(!l) return; l.innerHTML='';
+    State.videos.forEach(v => {
+      const isM = v.id === State.masterId;
+      const d = document.createElement('div');
+      d.style.cssText = `background:#222; padding:10px; margin-bottom:5px; border-radius:4px; border-left:3px solid ${isM?'var(--master)':'transparent'}`;
+      d.innerHTML = `
+        <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:bold; margin-bottom:5px;">
+           <span onclick="Engine.setMaster('${v.id}')" style="cursor:pointer">${v.label}</span>
+           <span style="font-family:monospace; color:#888;">${v.offset.toFixed(2)}s</span>
+        </div>
+        <div style="display:flex; gap:5px;">
+           <button class="primary" style="font-size:9px; flex:1" onclick="Engine.syncHere('${v.id}')">SYNC AQUÍ</button>
+           <button style="font-size:9px;" onclick="App.adjOffset('${v.id}', -0.05)">-</button>
+           <button style="font-size:9px;" onclick="App.adjOffset('${v.id}', 0.05)">+</button>
+           <button class="danger" style="font-size:9px;" onclick="App.remove('${v.id}')">×</button>
+        </div>
+      `;
+      l.appendChild(d);
+    });
+  },
+
+  renderMixer() {
+    const l = document.getElementById('mixerList'); if(!l) return; l.innerHTML='';
+    State.videos.forEach(v => {
+      const d = document.createElement('div'); d.style.marginBottom="8px";
+      d.innerHTML = `
+        <div style="font-size:10px; margin-bottom:2px; display:flex; justify-content:space-between;">
+           <span>${v.label}</span> <span>${v.volume||100}%</span>
+        </div>
+        <input type="range" min="0" max="100" value="${v.volume||100}" oninput="App.setVol('${v.id}', this.value)">
+      `;
+      l.appendChild(d);
+    });
+  },
+
+  renderGrid() {
+    const stage = document.getElementById('stage');
+    
+    if(stage.innerHTML !== '' && document.getElementById(`card-${State.videos[0]?.id}`)) {
+        this.updateGridLayout(); return; 
+    }
+    stage.innerHTML = '';
+
+    State.videos.forEach(v => {
+      const c = document.createElement('div'); c.className='card'; c.id=`card-${v.id}`;
+      c.innerHTML = `
+        <div class="card-header">
+           <span>${v.label}</span>
+           <button class="primary" style="padding:2px 6px; font-size:9px;" onclick="Engine.setMaster('${v.id}')">MASTER</button>
+        </div>
+        <div class="viewport">
+           <div class="tf-layer" id="tf-${v.id}"><div id="yt-${v.id}"></div></div>
+           <div class="interact-layer" id="layer-${v.id}"></div>
+           <canvas></canvas>
+        </div>
+      `;
+      stage.appendChild(c);
+      enablePan(document.getElementById(`layer-${v.id}`));
+      Engine.players[v.id] = new YT.Player(`yt-${v.id}`, {
+        videoId: v.ytId,
+        playerVars: { controls:0, modestbranding:1, rel:0 },
+        events: {
+           onReady: e => { 
+               e.target.id=v.id; e.target.mute(); 
+               e.target.setPlaybackQuality(State.quality || 'hd1080');
+               if(!State.masterId) Engine.setMaster(v.id); 
+           }
+        }
+      });
+    });
+    this.updateGridLayout();
+  },
+
+  toggleLayout() {
+    State.mode = (State.mode === 'grid') ? 'focused' : 'grid';
+    document.getElementById('lblLayout').innerText = State.mode.toUpperCase();
+    this.updateGridLayout();
+    
+    // PARCHE DE CALIDAD: Al cambiar el tamaño, YouTube baja la calidad.
+    // Nosotros la forzamos de nuevo inmediatamente.
+    setTimeout(() => {
+        Engine.setQuality(State.quality);
+    }, 300); // Pequeña espera para que el CSS termine de redimensionar
+  },  
+
+  updateGridLayout() {
+    const s = document.getElementById('stage');
+    if(State.mode === 'focused') s.classList.add('focused-mode');
+    else s.classList.remove('focused-mode');
+    
+    if(State.mode === 'grid') {
+        const n = State.videos.length;
+        let cols = Math.ceil(Math.sqrt(n));
+        let rows = Math.ceil(n / cols);
+        if(n===2) { cols=2; rows=1; }
+        s.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+        s.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
+        s.style.overflow = 'hidden';
+        s.style.alignContent = 'stretch';
+    } else {
+        s.style.gridTemplateColumns = ''; s.style.gridTemplateRows = '';
+    }
+    setTimeout(() => document.querySelectorAll('canvas').forEach(c => { c.width=c.parentElement.offsetWidth; c.height=c.parentElement.offsetHeight; }), 200);
+  },
+
+  updateMasterVisuals() {
+    document.querySelectorAll('.card').forEach(c => c.classList.remove('is-master'));
+    const c = document.getElementById(`card-${State.masterId}`);
+    if(c) c.classList.add('is-master');
+    const v = State.videos.find(x=>x.id===State.masterId);
+    document.getElementById('lblMaster').innerText = v ? v.label : '---';
+    this.renderVideos();
+    this.updateGridLayout();
+  },
+
+  updateFooter(curr, dur) {
+    const tc = document.getElementById('timecode');
+    if(tc) tc.innerHTML = Utils.fmtTime(curr);
+    const s = document.getElementById('scrubber');
+    const f = document.getElementById('scrubFill');
+    if(!Engine.isScrubbing && s && f) { 
+        s.max = dur; s.value = curr; 
+        f.style.width = (curr/dur*100) + '%';
+    }
+  },
+
+  toast(msg) {
+    const t = document.getElementById('toast'); t.innerText=msg; t.classList.add('show');
+    setTimeout(()=>t.classList.remove('show'), 2000);
+  }
+};
+
+window.onYouTubeIframeAPIReady = () => Engine.init();
+</script>
+</body>
+</html>
