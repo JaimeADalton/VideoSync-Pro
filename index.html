@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>VideoSync PRO</title>
+  <title>VideoSync PRO - High Res Force</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
   
   <style>
@@ -16,7 +16,7 @@
     * { box-sizing: border-box; margin: 0; padding: 0; outline: none; user-select: none; }
     body { background: var(--bg); color: var(--text); font-family: 'Inter', sans-serif; height: 100vh; display: flex; overflow: hidden; }
 
-    /* --- INPUTS FIX (NO ARROWS) --- */
+    /* --- INPUTS --- */
     input[type=number] { -moz-appearance: textfield; appearance: textfield; margin: 0; text-align: center; }
     input[type=number]::-webkit-inner-spin-button, 
     input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; display: none; }
@@ -36,7 +36,7 @@
     input[type=range]::-moz-range-thumb { height: 12px; width: 12px; background: #fff; border: none; border-radius: 50%; box-shadow: 0 1px 3px #000; }
     input[type=range]:hover::-webkit-slider-thumb { transform: scale(1.3); background: var(--accent); }
 
-    /* --- LAYOUT STRUCTURE --- */
+    /* --- LAYOUT --- */
     aside { width: 340px; background: var(--panel); border-right: 1px solid var(--border); display: flex; flex-direction: column; z-index: 50; flex-shrink: 0; transition: margin 0.3s; }
     aside.closed { margin-left: -340px; }
 
@@ -48,26 +48,19 @@
     .tool-group { display: flex; align-items: center; gap: 8px; border-right: 1px solid #333; padding-right: 15px; }
     .tool-label { font-size: 9px; font-weight: 800; color: #555; text-transform: uppercase; margin-right: 5px; }
 
-    /* --- STAGE GRID (CORE FIX) --- */
+    /* --- STAGE --- */
     #stage {
       flex: 1; background: #000; padding: 2px; overflow: hidden; position: relative;
       display: grid; gap: 2px;
       align-content: stretch; justify-items: stretch;
     }
 
-    /* === MODO FOCUSED (LAYOUT ARREGLADO) === */
+    /* MODO FOCUSED */
     #stage.focused-mode {
-      grid-template-columns: 1fr 300px !important; /* Master (Flex) | Lista (Fija) */
-      
-      /* Filas compactas para la lista lateral */
+      grid-template-columns: 1fr 300px !important;
       grid-auto-rows: 170px !important; 
-      
-      /* Scroll vertical activado SOLO en este modo */
       overflow-y: auto; 
-      
-      /* Alineación arriba para evitar huecos entre miniaturas */
       align-content: start !important;
-      
       display: grid;
     }
 
@@ -78,30 +71,10 @@
     }
     .card.is-master { border: 2px solid var(--master); z-index: 10; }
 
-    /* Reglas para Miniaturas (Columna Derecha) */
-    #stage.focused-mode .card {
-        grid-column: 2 / 3; 
-        height: 100% !important; /* Llenan la fila de 170px */
-        width: 100%;
-        order: 2;
-    }
-    
-    /* Reglas para MASTER (Izquierda Centrado) */
+    #stage.focused-mode .card { grid-column: 2 / 3; height: 100% !important; width: 100%; order: 2; }
     #stage.focused-mode .card.is-master {
-        grid-column: 1 / 2;
-        /* Ocupa todo el alto vertical de la columna izquierda (spanning) */
-        grid-row: 1 / 999; 
-        
-        /* STICKY: Se queda fijo mientras scrolleas la derecha */
-        position: sticky; 
-        top: 0; left: 0;
-        
-        /* Altura exacta del viewport disponible (Header 45 + Toolbar 45 + Footer 80 = 170px aprox used) 
-           Usamos calc(100vh - 170px) para forzar el centrado vertical del contenido */
-        height: calc(100vh - 170px) !important;
-        
-        order: 1;
-        border: none;
+        grid-column: 1 / 2; grid-row: 1 / 999; position: sticky; top: 0; left: 0;
+        height: calc(100vh - 170px) !important; order: 1; border: none;
     }
 
     .card-header {
@@ -111,8 +84,26 @@
     }
 
     .viewport { flex: 1; position: relative; overflow: hidden; background: #000; width: 100%; height: 100%; }
-    .tf-layer { width: 100%; height: 100%; position: absolute; top:0; left:0; transform-origin: center center; transition: transform 0.05s linear; }
-    .tf-layer iframe { width: 100%; height: 100%; border: 0; display: block; }
+    
+    .tf-layer { 
+        width: 100%; height: 100%; position: absolute; top:0; left:0; 
+        transform-origin: center center; transition: transform 0.05s linear; 
+    }
+
+    /* 
+       === [CLAVE] SUPER RESOLUCIÓN TRICK === 
+       Hacemos el iframe 3 veces más grande (300%) y lo escalamos al 33%.
+       Esto engaña a YouTube para que envíe HD/4K incluso en ventanas pequeñas.
+    */
+    .tf-layer iframe { 
+        width: 300% !important; 
+        height: 300% !important; 
+        transform: scale(0.333333); 
+        transform-origin: 0 0;
+        border: 0; 
+        display: block; 
+        pointer-events: none; /* Evita interferencia con el click, ya que usas controles externos */
+    }
     
     .interact-layer { position: absolute; top: 0; left: 0; width: 100%; height: 100%; z-index: 10; }
     .interact-layer.pan-mode { cursor: grab; }
@@ -161,27 +152,18 @@
     <div class="tab" onclick="UI.tab('audio')">AUDIO</div>
     <div class="tab" onclick="UI.tab('data')">DATOS</div>
   </div>
-
     
-  <!-- TAB 1: FUENTES (CORREGIDO) -->
   <div id="tab-src" class="tab-body active">
     <div style="background:#222; padding:12px; border-radius:6px; margin-bottom:15px; border:1px solid #333;">
       <div style="font-size:10px; font-weight:800; color:#666; margin-bottom:8px; letter-spacing:0.5px; text-transform:uppercase;">Nueva Fuente</div>
-      
-      <!-- Input URL -->
       <input type="text" id="inUrl" placeholder="Pegar URL de YouTube..." style="margin-bottom:8px; width:100%; box-sizing:border-box;">
-      
-      <!-- Fila Etiqueta + Botón -->
       <div style="display:flex; gap:8px;">
-        <!-- flex:1 para que ocupe el hueco disponible, min-width:0 para no desbordar -->
         <input type="text" id="inLabel" placeholder="Etiqueta" style="flex:1; min-width:0;">
         <button class="primary" onclick="App.addVideo()" style="white-space:nowrap;">+ Añadir</button>
       </div>
     </div>
     <div id="videoList" style="flex:1; overflow-y:auto;"></div>
   </div>  
-
-
 
   <div id="tab-audio" class="tab-body">
     <div style="margin-bottom:10px; display:flex; justify-content:space-between; align-items:center;">
@@ -211,9 +193,10 @@
       VideoSync <span style="color:var(--accent)">PRO</span>
     </div>
     <div style="display:flex; gap:10px; align-items:center;">
+      <!-- Forzamos a HD1080 por defecto y avisamos que esto consume más recursos -->
       <select id="qualitySelect" onchange="Engine.setQuality(this.value)" style="width:90px; background:#222; border:1px solid #333; color:#fff; padding:4px; border-radius:4px; font-size:11px;">
         <option value="highres">4K/Orig</option>
-        <option value="hd1080" selected>1080p</option> <!-- Marcado por defecto -->
+        <option value="hd1080" selected>1080p</option>
         <option value="hd720">720p</option>
         <option value="large">480p</option>
         <option value="default">Auto</option>
@@ -309,7 +292,7 @@ const State = {
   pan: {x:0, y:0},
   globalVol: 100,
   loop: {a:null, b:null},
-  quality: 'hd1080' // <--- AÑADIR ESTA LÍNEA
+  quality: 'hd1080' 
 };
 
 const Engine = {
@@ -437,9 +420,7 @@ const Engine = {
   },
   
   setQuality(q) {
-      State.quality = q; // Guardamos la preferencia
-      
-      // Calculamos el tiempo global actual del Master
+      State.quality = q;
       const m = this.players[State.masterId];
       let globalT = 0;
       if (State.masterId && m && typeof m.getCurrentTime === 'function') {
@@ -450,23 +431,19 @@ const Engine = {
       Object.values(this.players).forEach(p => {
           const vData = State.videos.find(v => v.id === p.id);
           if(!vData) return;
-
-          // Calculamos el tiempo exacto donde debe estar este video
           const target = State.masterId ? (globalT + vData.offset) : p.getCurrentTime();
-
-          // RECARGA FORZOSA CON CALIDAD
+          
+          // RECARGA Y FUERZA DE CALIDAD
           p.loadVideoById({
               videoId: vData.ytId,
               startSeconds: target,
               suggestedQuality: State.quality
           });
+          p.setPlaybackQuality(State.quality); // Intento doble
       });
 
-      // Si estaba pausado, mantenemos la pausa tras la recarga
       if (!State.isPlaying) {
-          setTimeout(() => {
-              Object.values(this.players).forEach(p => p.pauseVideo());
-          }, 500);
+          setTimeout(() => Object.values(this.players).forEach(p => p.pauseVideo()), 500);
       }
       
       UI.toast("Calidad Forzada: " + State.quality);
@@ -642,8 +619,15 @@ const UI = {
         events: {
            onReady: e => { 
                e.target.id=v.id; e.target.mute(); 
-               e.target.setPlaybackQuality(State.quality || 'hd1080');
+               // Forzar calidad al iniciar
+               e.target.setPlaybackQuality(State.quality);
                if(!State.masterId) Engine.setMaster(v.id); 
+           },
+           onStateChange: e => {
+               // TRUCO ADICIONAL JS: Si empieza a reproducir (1) o está en buffer (3), forzar calidad de nuevo
+               if(e.data === 1 || e.data === 3) {
+                   e.target.setPlaybackQuality(State.quality);
+               }
            }
         }
       });
@@ -655,12 +639,7 @@ const UI = {
     State.mode = (State.mode === 'grid') ? 'focused' : 'grid';
     document.getElementById('lblLayout').innerText = State.mode.toUpperCase();
     this.updateGridLayout();
-    
-    // PARCHE DE CALIDAD: Al cambiar el tamaño, YouTube baja la calidad.
-    // Nosotros la forzamos de nuevo inmediatamente.
-    setTimeout(() => {
-        Engine.setQuality(State.quality);
-    }, 300); // Pequeña espera para que el CSS termine de redimensionar
+    setTimeout(() => { Engine.setQuality(State.quality); }, 300); 
   },  
 
   updateGridLayout() {
