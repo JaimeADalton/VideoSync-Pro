@@ -39,11 +39,8 @@
     /* --- LAYOUT --- */
     aside { width: 340px; background: var(--panel); border-right: 1px solid var(--border); display: flex; flex-direction: column; z-index: 50; flex-shrink: 0; transition: margin 0.3s; }
     aside.closed { margin-left: -340px; }
-
     main { flex: 1; display: flex; flex-direction: column; min-width: 0; position: relative; transition: 0.3s; }
-
     header { height: 45px; background: var(--panel); border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; padding: 0 15px; flex-shrink: 0; }
-    
     .toolbar { height: 45px; background: #0f0f0f; border-bottom: 1px solid var(--border); display: flex; align-items: center; padding: 0 15px; gap: 15px; overflow-x: auto; flex-shrink: 0; }
     .tool-group { display: flex; align-items: center; gap: 8px; border-right: 1px solid #333; padding-right: 15px; }
     .tool-label { font-size: 9px; font-weight: 800; color: #555; text-transform: uppercase; margin-right: 5px; }
@@ -54,8 +51,6 @@
       display: grid; gap: 2px;
       align-content: stretch; justify-items: stretch;
     }
-
-    /* MODO FOCUSED */
     #stage.focused-mode {
       grid-template-columns: 1fr 300px !important;
       grid-auto-rows: 170px !important; 
@@ -63,15 +58,13 @@
       align-content: start !important;
       display: grid;
     }
-
     .card {
       background: #000; border: 1px solid #222; display: flex; flex-direction: column;
       position: relative; overflow: hidden;
       width: 100%; height: 100%;
-      transition: width 0.3s, height 0.3s, top 0.3s, left 0.3s; /* Animación suave entrada/salida FS */
+      transition: width 0.3s, height 0.3s, top 0.3s, left 0.3s;
     }
     .card.is-master { border: 2px solid var(--master); z-index: 10; }
-
     #stage.focused-mode .card { grid-column: 2 / 3; height: 100% !important; width: 100%; order: 2; }
     #stage.focused-mode .card.is-master {
         grid-column: 1 / 2; grid-row: 1 / 999; position: sticky; top: 0; left: 0;
@@ -83,18 +76,15 @@
     body.fullscreen-active header,
     body.fullscreen-active .toolbar,
     body.fullscreen-active footer {
-        display: none !important; /* Ocultar toda la UI */
+        display: none !important;
     }
-
     body.fullscreen-active #stage {
         padding: 0; gap: 0;
-        display: block !important; /* Romper el Grid */
+        display: block !important;
     }
-
     body.fullscreen-active .card {
-        display: none; /* Ocultar las cartas no activas */
+        display: none;
     }
-
     body.fullscreen-active .card.is-fs {
         display: flex;
         position: fixed;
@@ -104,15 +94,12 @@
         z-index: 9999;
         border: none;
     }
-
-    /* Ocultar header de la carta en FS para inmersión total (opcional, aquí lo dejo visible pero sutil) */
     body.fullscreen-active .card.is-fs .card-header {
         position: absolute; top: -40px; left: 0; width: 100%; transition: top 0.2s; opacity: 0;
     }
     body.fullscreen-active .card.is-fs:hover .card-header {
-        top: 0; opacity: 1; /* Mostrar solo al mover el mouse */
+        top: 0; opacity: 1;
     }
-
 
     .card-header {
       height: 28px; background: rgba(20,20,20,0.95); display: flex; align-items: center; justify-content: space-between;
@@ -127,7 +114,7 @@
         transform-origin: center center; transition: transform 0.05s linear; 
     }
 
-    /* === SUPER RESOLUCIÓN TRICK (Aplica en Grid, Focused Y Fullscreen) === */
+    /* === SUPER RESOLUCIÓN TRICK === */
     .tf-layer iframe { 
         width: 300% !important; 
         height: 300% !important; 
@@ -148,20 +135,19 @@
     footer { height: 80px; background: var(--panel); border-top: 1px solid var(--border); display: flex; flex-direction: column; z-index: 60; flex-shrink: 0; }
     
     .timeline { 
-      height: 14px; /* Altura del área sensible al ratón */
+      height: 14px; 
       background: #000; 
       position: relative; 
       cursor: pointer; 
       width: 100%; 
     }
 
-    /* Estilos compartidos para Fondo (Gris) y Relleno (Rojo) */
     .t-bg, .t-fill { 
       position: absolute; 
       bottom: 0; 
       left: 0; 
-      height: 3px; /* Grosor fino por defecto */
-      transition: height 0.15s ease; /* Animación suave de grosor */
+      height: 3px; 
+      transition: height 0.15s ease; 
     }
 
     .t-bg { 
@@ -173,11 +159,9 @@
       width: 0%; 
       background: #cc0000; 
       pointer-events: none; 
-      /* Animamos el width (progreso) lineal, y el height (grosor) suave */
       transition: width 0.1s linear, height 0.15s ease; 
     }
 
-    /* AL PASAR EL RATÓN: Engrosar ambas barras */
     .timeline:hover .t-bg, 
     .timeline:hover .t-fill { 
       height: 100%; 
@@ -187,28 +171,46 @@
       position: absolute; top: -5px; left: 0; width: 100%; height: 25px; opacity: 0; cursor: pointer; margin: 0; z-index: 20; 
     }
 
+    /* Deck y Botones */
     .deck { flex: 1; display: flex; align-items: center; justify-content: space-between; padding: 0 20px; }
-    
     button { cursor: pointer; background: #222; border: 1px solid #333; color: #ccc; padding: 6px 12px; border-radius: 4px; font-size: 11px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; transition: 0.1s; font-family: inherit; white-space: nowrap; }
     button:hover { background: #333; color: #fff; border-color: #555; }
     button.primary { background: var(--accent); color: #000; border-color: var(--accent); }
     button.danger { color: var(--danger); border-color: rgba(239,68,68,0.3); background: rgba(239,68,68,0.05); }
     button.active { background: var(--accent); color: #fff; border-color: var(--accent); }
-
     .play-btn { width: 40px; height: 40px; border-radius: 50%; background: #fff; color: #000; display: flex; align-items: center; justify-content: center; font-size: 20px; border: none; box-shadow: 0 0 15px rgba(255,255,255,0.1); }
     .play-btn:hover { transform: scale(1.1); }
-
     .lcd-time { font-family: 'JetBrains Mono', monospace; font-size: 20px; font-weight: 700; color: var(--text); background: #080808; padding: 2px 10px; border: 1px solid #333; border-radius: 4px; }
-
     /* TABS */
     .tabs-head { display: flex; border-bottom: 1px solid var(--border); background: #111; }
     .tab { flex: 1; text-align: center; padding: 10px; font-size: 10px; font-weight: 700; color: #666; cursor: pointer; border-bottom: 2px solid transparent; }
     .tab.active { color: var(--accent); border-bottom-color: var(--accent); background: var(--panel); }
     .tab-body { padding: 15px; flex: 1; overflow-y: auto; display: none; flex-direction: column; }
     .tab-body.active { display: flex; }
-
     .toast { position: fixed; bottom: 100px; left: 50%; transform: translateX(-50%); background: #222; border: 1px solid var(--accent); padding: 8px 16px; border-radius: 20px; font-size: 12px; opacity: 0; pointer-events: none; transition: 0.3s; z-index: 200; }
     .toast.show { opacity: 1; bottom: 110px; }
+
+    /* --- WIZARD MODE STYLES --- */
+    /* Clase aplicada al body cuando el Wizard está activo */
+    body.wizard-active .card {
+      display: none !important; /* Oculta todas las cartas por defecto */
+    }
+    /* Clase aplicada SOLO a las cartas seleccionadas A y B */
+    body.wizard-active .card.wizard-involved {
+      display: flex !important; 
+    }
+
+    /* Panel de control dentro del Sidebar durante el Wizard */
+    .wizard-panel {
+      background: #1a1a1a;
+      border: 1px solid var(--accent);
+      padding: 15px;
+      border-radius: 6px;
+      margin-bottom: 15px;
+      text-align: center;
+    }
+    .wizard-panel h3 { font-size: 12px; margin-bottom: 10px; color: var(--accent); text-transform: uppercase; }
+    .wizard-panel p { font-size: 10px; color: #888; margin-bottom: 15px; line-height: 1.4; }
   </style>
 </head>
 <body>
@@ -359,7 +361,13 @@ const State = {
   globalVol: 100,
   loop: {a:null, b:null},
   quality: 'hd1080',
-  fullScreenId: null // Trackeamos si estamos en FS
+  fullScreenId: null,
+
+  wizard: {
+    active: false,
+    refId: null,   
+    targetId: null 
+  }
 };
 
 const Engine = {
@@ -376,7 +384,6 @@ const Engine = {
     }
     this.int = setInterval(() => this.tick(), 100);
     
-    // Controles globales Teclado
     document.addEventListener('keydown', e => {
         if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA') return;
         if(e.code==='Space') { e.preventDefault(); this.toggleGlobalPlay(); }
@@ -387,7 +394,6 @@ const Engine = {
   tick() {
     if(this.isScrubbing || !State.masterId) return;
     
-    // Si estamos en fullscreen, solo nos importa el master (o la carta que está en fullscreen)
     const activeId = State.fullScreenId || State.masterId;
     const m = this.players[activeId];
     
@@ -395,6 +401,8 @@ const Engine = {
 
     const curr = m.getCurrentTime();
     const dur = m.getDuration();
+    
+    // ACTUALIZAR FOOTER SIEMPRE PARA VER EL TIEMPO Y LA BARRA MOVERSE
     UI.updateFooter(curr, dur);
 
     if(State.loop.a !== null && State.loop.b !== null && curr >= State.loop.b) m.seekTo(State.loop.a);
@@ -405,8 +413,10 @@ const Engine = {
         document.getElementById('btnPlay').innerText = playing ? "⏸" : "▶";
     }
 
-    // Si NO estamos en Fullscreen, sincronizamos los esclavos.
-    // Si ESTAMOS en Fullscreen, los esclavos están pausados (lógica en toggleFullscreen)
+    // Si el Wizard está activo, DETENEMOS la sincronización automática aquí.
+    // Pero el resto de la función (footer update) ya se ejecutó arriba.
+    if (State.wizard.active) return; 
+
     if(State.isPlaying && !State.fullScreenId) {
         const mOff = State.videos.find(v=>v.id===activeId).offset;
         const global = curr - mOff;
@@ -422,45 +432,24 @@ const Engine = {
     }
   },
   
-  // === LOGICA NUEVA: PANTALLA COMPLETA ===
   toggleFullscreen(id) {
     const body = document.body;
     const card = document.getElementById(`card-${id}`);
     
     if (State.fullScreenId === id) {
-        // ==> SALIR DE FULLSCREEN
         State.fullScreenId = null;
         body.classList.remove('fullscreen-active');
         card.classList.remove('is-fs');
-        
         UI.toast("Modo Grid");
-        
-        // Sincronización Mágica:
-        // 1. Forzamos sync inmediata (porque los otros videos se quedaron atrás)
         this.forceSync(); 
-        
-        // 2. Si el master estaba tocando, reanudamos los demás
-        if(State.isPlaying) {
-            Object.values(this.players).forEach(p => {
-                if(p.id !== id) p.playVideo();
-            });
-        }
-
+        if(State.isPlaying) Object.values(this.players).forEach(p => { if(p.id !== id) p.playVideo(); });
     } else {
-        // ==> ENTRAR A FULLSCREEN
-        // Primero, aseguramos que este sea el master, para que tenga el control
         if(State.masterId !== id) this.setMaster(id);
-        
         State.fullScreenId = id;
         body.classList.add('fullscreen-active');
         card.classList.add('is-fs');
-        
         UI.toast("Modo Cine (ESC para salir)");
-        
-        // Pausamos todos los esclavos para ahorrar recursos
-        Object.values(this.players).forEach(p => {
-            if(p.id !== id) p.pauseVideo();
-        });
+        Object.values(this.players).forEach(p => { if(p.id !== id) p.pauseVideo(); });
     }
   },
 
@@ -469,7 +458,10 @@ const Engine = {
       UI.updateMasterVisuals();
       this.updateAudio();
       State.zoom = 100; State.pan = {x:0, y:0}; this.setZoom(100);
-      UI.toast(`MASTER: ${State.videos.find(v=>v.id===id).label}`);
+      
+      // Mensaje diferente si estamos en Wizard
+      if(State.wizard.active) UI.toast(`Controlando: ${State.videos.find(v=>v.id===id).label}`);
+      else UI.toast(`MASTER: ${State.videos.find(v=>v.id===id).label}`);
   },
 
   toggleGlobalPlay() {
@@ -477,9 +469,12 @@ const Engine = {
       document.getElementById('btnPlay').innerText = State.isPlaying ? "⏸" : "▶";
       const action = State.isPlaying ? "playVideo" : "pauseVideo";
       
-      // Si estamos en FS, solo actuamos sobre el Master
       if(State.fullScreenId) {
           this.players[State.fullScreenId][action]();
+      } else if (State.wizard.active) {
+          // En modo Wizard, solo damos play al Master seleccionado actualmente
+          // para evitar que se muevan los dos a la vez y sea caótico buscar el frame
+          this.players[State.masterId][action]();
       } else {
           Object.values(this.players).forEach(p => { if(typeof p[action] === 'function') p[action](); });
       }
@@ -496,8 +491,7 @@ const Engine = {
   },
   endScrub() { 
       this.isScrubbing = false; 
-      // Si no estamos en FS, sincronizamos. Si estamos en FS, no hace falta (los otros están pausados)
-      if(!State.fullScreenId) this.forceSync(); 
+      if(!State.fullScreenId && !State.wizard.active) this.forceSync(); 
   },
 
   skip(val) {
@@ -505,29 +499,23 @@ const Engine = {
       if(!active) return;
       const m = this.players[active];
       m.seekTo(m.getCurrentTime() + val, true);
-      if(!State.fullScreenId) setTimeout(()=>this.forceSync(), 200);
+      if(!State.fullScreenId && !State.wizard.active) setTimeout(()=>this.forceSync(), 200);
   },
 
   forceSync() {
-      if(!State.masterId) return;
+      if(!State.masterId || State.wizard.active) return;
       const m = this.players[State.masterId];
-      const global = m.getCurrentTime() - State.videos.find(v=>v.id===State.masterId).offset;
+      const mVid = State.videos.find(v=>v.id===State.masterId);
+      if (!mVid || typeof m.getCurrentTime !== 'function') return;
+
+      const global = m.getCurrentTime() - mVid.offset;
+      
       Object.values(this.players).forEach(p => {
           if(p.id!==State.masterId) {
               const off = State.videos.find(v=>v.id===p.id).offset;
               p.seekTo(global + off, true);
           }
       });
-  },
-
-  syncHere(slaveId) {
-    if(!State.masterId) return alert("Define Master primero");
-    const m = this.players[State.masterId];
-    const s = this.players[slaveId];
-    const mOff = State.videos.find(v=>v.id===State.masterId).offset;
-    const sVid = State.videos.find(v=>v.id===slaveId);
-    sVid.offset = s.getCurrentTime() - m.getCurrentTime() + mOff;
-    App.save(); UI.renderVideos(); UI.toast("Offset actualizado");
   },
 
   updateAudio() {
@@ -537,7 +525,9 @@ const Engine = {
       const vol = v ? (v.volume || 100) : 100;
       const finalVol = Math.min(vol, State.globalVol);
       if(solo) {
-        if(p.id === State.masterId) { p.unMute(); p.setVolume(finalVol); } else p.mute();
+        // En Wizard, escuchamos el que está seleccionado como Master (el que controlamos)
+        const isAudible = (p.id === State.masterId);
+        if(isAudible) { p.unMute(); p.setVolume(finalVol); } else p.mute();
       } else {
         p.unMute(); p.setVolume(finalVol);
       }
@@ -564,8 +554,12 @@ const Engine = {
       Object.values(this.players).forEach(p => {
           const vData = State.videos.find(v => v.id === p.id);
           if(!vData) return;
-          const target = active ? (globalT + vData.offset) : p.getCurrentTime();
           
+          let target = p.getCurrentTime();
+          if (active && !State.wizard.active) {
+            target = globalT + vData.offset;
+          }
+
           p.loadVideoById({
               videoId: vData.ytId,
               startSeconds: target,
@@ -606,7 +600,75 @@ const Engine = {
 
   setLoopA() { if(State.masterId) { State.loop.a = this.players[State.masterId].getCurrentTime(); UI.toast("Loop A"); } },
   setLoopB() { if(State.masterId) { State.loop.b = this.players[State.masterId].getCurrentTime(); UI.toast("Loop B"); } },
-  clearLoop() { State.loop = {a:null, b:null}; UI.toast("Loop Off"); }
+  clearLoop() { State.loop = {a:null, b:null}; UI.toast("Loop Off"); },
+
+  // --- WIZARD LOGIC ---
+  enterWizard(targetId) {
+    if (!State.masterId) return UI.toast("Selecciona un Master (A) primero");
+    if (State.masterId === targetId) return UI.toast("Elige un video diferente al Master");
+    if (State.fullScreenId) this.toggleFullscreen(State.fullScreenId);
+
+    if (State.isPlaying) this.toggleGlobalPlay();
+    Object.values(this.players).forEach(p => p.pauseVideo());
+
+    State.wizard.active = true;
+    State.wizard.refId = State.masterId; 
+    State.wizard.targetId = targetId;    
+    
+    document.body.classList.add('wizard-active');
+    
+    // 1. Renderizamos sidebar para ver controles
+    UI.renderVideos(); 
+
+    // 2. Actualizamos clases de las tarjetas existentes (sin destruir los iframes)
+    UI.updateWizardClasses();
+    
+    // 3. Ajustamos el layout grid
+    UI.updateGridLayout();
+    
+    this.updateAudio();
+    UI.toast("MODO SINCRONIZACIÓN ACTIVADO");
+  },
+
+  applyWizardSync() {
+    const refId = State.wizard.refId;
+    const targetId = State.wizard.targetId;
+    
+    const pRef = this.players[refId];
+    const pTarget = this.players[targetId];
+
+    const tRef = pRef.getCurrentTime();
+    const tTarget = pTarget.getCurrentTime();
+
+    const refData = State.videos.find(v => v.id === refId);
+    const offsetRef = refData.offset;
+
+    // Calcular Offset
+    const newOffset = tTarget - (tRef - offsetRef);
+
+    const targetData = State.videos.find(v => v.id === targetId);
+    targetData.offset = newOffset;
+    App.save();
+
+    UI.toast(`Sincronizado! Offset: ${newOffset.toFixed(2)}s`);
+    this.exitWizard();
+  },
+
+  exitWizard() {
+    State.wizard.active = false;
+    State.wizard.refId = null;
+    State.wizard.targetId = null;
+
+    document.body.classList.remove('wizard-active');
+    
+    // Restaurar visualización
+    UI.renderVideos();
+    UI.updateWizardClasses(); // Limpiar clases wizard-involved
+    UI.updateGridLayout();
+    
+    this.updateAudio();
+    this.forceSync();
+  },
 };
 
 function enablePan(div) {
@@ -667,7 +729,14 @@ const App = {
     }
   },
   remove(id) { if(confirm("Eliminar?")) { State.videos = State.videos.filter(v=>v.id!==id); this.save(); location.reload(); } },
-  adjOffset(id, v) { const x = State.videos.find(z=>z.id===id); if(x) { x.offset+=v; UI.renderVideos(); } },
+  adjOffset(id, v) { 
+      const x = State.videos.find(z=>z.id===id); 
+      if(x) { 
+          x.offset+=v; 
+          UI.renderVideos(); 
+          Engine.forceSync(); 
+      } 
+  },
   setVol(id, v) { const x = State.videos.find(z=>z.id===id); if(x) { x.volume=v; Engine.updateAudio(); } },
   save() { localStorage.setItem('vs_final_fix', JSON.stringify(State.videos)); },
   load() { const d = localStorage.getItem('vs_final_fix'); if(d) State.videos = JSON.parse(d); },
@@ -688,22 +757,53 @@ const UI = {
   
   renderVideos() {
     const l = document.getElementById('videoList'); if(!l) return; l.innerHTML='';
+
+    // MODO WIZARD
+    if (State.wizard.active) {
+        const refV = State.videos.find(v => v.id === State.wizard.refId);
+        const targetV = State.videos.find(v => v.id === State.wizard.targetId);
+
+        const div = document.createElement('div');
+        div.className = 'wizard-panel';
+        div.innerHTML = `
+            <h3>Sincronizando "${targetV.label}" con "${refV.label}"</h3>
+            <p>
+               1. Haz click en "MASTER" de <b>${refV.label}</b> y busca un punto visual.<br><br>
+               2. Haz click en "MASTER" de <b>${targetV.label}</b> y busca el mismo punto.<br><br>
+               3. Confirma.
+            </p>
+            <div style="display:flex; gap:10px;">
+                <button class="primary" style="flex:1; padding:10px;" onclick="Engine.applyWizardSync()">🔗 CONFIRMAR</button>
+                <button class="danger" onclick="Engine.exitWizard()">Cancelar</button>
+            </div>
+        `;
+        l.appendChild(div);
+        return; 
+    }
+
+    // MODO NORMAL
     State.videos.forEach(v => {
       const isM = v.id === State.masterId;
+
       const d = document.createElement('div');
-      d.style.cssText = `background:#222; padding:10px; margin-bottom:5px; border-radius:4px; border-left:3px solid ${isM?'var(--master)':'transparent'}`;
-      d.innerHTML = `
+      d.style.cssText = `background:#222; padding:10px; margin-bottom:5px; border-radius:4px; border-left:3px solid ${isM?'var(--master)':'transparent'}; transition: 0.2s;`;
+      
+      let html = `
         <div style="display:flex; justify-content:space-between; font-size:11px; font-weight:bold; margin-bottom:5px;">
-           <span onclick="Engine.setMaster('${v.id}')" style="cursor:pointer">${v.label}</span>
-           <span style="font-family:monospace; color:#888;">${v.offset.toFixed(2)}s</span>
-        </div>
+           <span onclick="Engine.setMaster('${v.id}')" style="cursor:pointer;">${v.label}</span>
+           <span style="font-family:monospace; color:#888;">${v.offset > 0 ? '+' : ''}${v.offset.toFixed(2)}s</span>
+        </div>`;
+
+      const controlsHtml = `
         <div style="display:flex; gap:5px;">
-           <button class="primary" style="font-size:9px; flex:1" onclick="Engine.syncHere('${v.id}')">SYNC AQUÍ</button>
+           ${!isM ? `<button style="font-size:9px; flex:1;" onclick="Engine.enterWizard('${v.id}')">🔗 WIZARD SYNC</button>` : '<span style="flex:1; font-size:9px; color:#555; text-align:center; padding-top:4px;">MASTER (A)</span>'}
            <button style="font-size:9px;" onclick="App.adjOffset('${v.id}', -0.05)">-</button>
            <button style="font-size:9px;" onclick="App.adjOffset('${v.id}', 0.05)">+</button>
            <button class="danger" style="font-size:9px;" onclick="App.remove('${v.id}')">×</button>
         </div>
-      `;
+        `;
+
+      d.innerHTML = html + controlsHtml;
       l.appendChild(d);
     });
   },
@@ -722,16 +822,45 @@ const UI = {
     });
   },
 
+  // Función auxiliar para actualizar las clases del Wizard sin destruir el DOM (manteniendo iframes)
+  updateWizardClasses() {
+     State.videos.forEach(v => {
+        const card = document.getElementById(`card-${v.id}`);
+        if(card) {
+            if(State.wizard.active) {
+                if(v.id === State.wizard.refId || v.id === State.wizard.targetId) {
+                    card.classList.add('wizard-involved');
+                } else {
+                    card.classList.remove('wizard-involved');
+                }
+            } else {
+                card.classList.remove('wizard-involved');
+            }
+        }
+     });
+  },
+
   renderGrid() {
     const stage = document.getElementById('stage');
     
+    // Si ya existe contenido, solo actualizamos layout y clases, NO reconstruimos (para no matar iframes)
     if(stage.innerHTML !== '' && document.getElementById(`card-${State.videos[0]?.id}`)) {
-        this.updateGridLayout(); return; 
+        this.updateWizardClasses();
+        this.updateGridLayout(); 
+        return; 
     }
     stage.innerHTML = '';
 
     State.videos.forEach(v => {
-      const c = document.createElement('div'); c.className='card'; c.id=`card-${v.id}`;
+      const c = document.createElement('div'); 
+      c.className='card'; 
+      c.id=`card-${v.id}`;
+      
+      // Para carga inicial
+      if (State.wizard.active && (v.id === State.wizard.refId || v.id === State.wizard.targetId)) {
+         c.classList.add('wizard-involved');
+      }
+
       c.innerHTML = `
         <div class="card-header">
            <div style="display:flex; align-items:center; gap:5px;">
@@ -779,9 +908,19 @@ const UI = {
 
   updateGridLayout() {
     const s = document.getElementById('stage');
-    if(State.mode === 'focused') s.classList.add('focused-mode');
+    
+    // CORRECCIÓN LAYOUT: Evitar conflicto entre Focused Mode y Wizard Mode
+    if(State.mode === 'focused' && !State.wizard.active) s.classList.add('focused-mode');
     else s.classList.remove('focused-mode');
     
+    if (State.wizard.active) {
+        s.style.gridTemplateColumns = '1fr 1fr';
+        s.style.gridTemplateRows = '1fr';
+        s.style.overflow = 'hidden';
+        s.style.alignContent = 'stretch';
+        return;
+    }
+
     if(State.mode === 'grid') {
         const n = State.videos.length;
         let cols = Math.ceil(Math.sqrt(n));
@@ -804,7 +943,8 @@ const UI = {
     const v = State.videos.find(x=>x.id===State.masterId);
     document.getElementById('lblMaster').innerText = v ? v.label : '---';
     this.renderVideos();
-    this.updateGridLayout();
+    // En wizard mode no necesitamos actualizar layout completo cada vez que cambiamos de master
+    if(!State.wizard.active) this.updateGridLayout();
   },
 
   updateFooter(curr, dur) {
